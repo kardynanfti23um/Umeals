@@ -30,4 +30,4 @@ flutter:
     - assets/images/food/
     - assets/images/background/
     - assets/icons/
-    - assets/logos/
+    # Hapus assets/logos/ karena tidak ada
