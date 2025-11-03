@@ -1,0 +1,82 @@
+name: Deploy Flutter Web to GitHub Pages
+
+# Trigger workflow
+on:
+  push:
+    branches: [ main ]  # Ganti ke 'master' jika branch utama Anda master
+  workflow_dispatch:    # Memungkinkan manual trigger
+
+# Permissions untuk GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Hanya satu deployment yang berjalan pada satu waktu
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. Checkout code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    # 2. Setup Flutter
+    - name: Setup Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+    
+    # 3. Verify Flutter installation
+    - name: Verify Flutter installation
+      run: |
+        flutter --version
+        flutter doctor -v
+    
+    # 4. Get dependencies
+    - name: Install dependencies
+      run: flutter pub get
+    
+    # 5. Analyze code (optional)
+    - name: Analyze code
+      run: flutter analyze
+    
+    # 6. Run tests (optional)
+    - name: Run tests
+      run: flutter test
+    
+    # 7. Build web
+    - name: Build Flutter Web
+      run: |
+        flutter build web --release --base-href "/umeals/" --web-renderer html
+    
+    # 8. Upload build artifacts
+    - name: Upload build artifacts
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: build/web
+
+  # Deploy job
+  deploy:
+    # Depend on build job
+    needs: build
+    
+    # Deploy to GitHub Pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
